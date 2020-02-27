@@ -7,4 +7,4 @@
 
 import funciones as fn
 
-datos = fn.f_leer_archivo(param_archivo='data_LNGO.xlsx')
+datos = fn.f_leer_archivo(param_archivo='archivo_tradeview_1.xlsx')
