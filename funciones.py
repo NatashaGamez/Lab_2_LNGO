@@ -37,3 +37,48 @@ def f_leer_archivo(param_archivo):
 
     df_data[numcols] = df_data[numcols].apply(pd.to_numeric)
     return df_data
+
+
+def f_pip_size(param_ins):
+    """
+
+    Parameters
+    ----------
+    param_ins : str : nombre de instrumento
+    Returns
+    -------
+    Debugging
+    """
+    # encontar y eliminar un guion bajo
+    inst = param_ins.replace('-', '')
+
+    # transformar a minusculas
+    inst = inst.lower()
+
+    # lista de pips por instrumento
+    pip_inst = {'usdjpy': 100, 'gbpjpy': 100, 'eurjpy': 100, 'cadjpy': 100,
+                'chfjpy': 100,
+                'eurusd': 10000, 'gbpusd': 10000, 'usdcad': 10000, 'usdmxn': 10000,
+                'audusd': 10000, 'nzdusd': 10000, 'usdchf': 10000, 'eurgbp': 10000,
+                'eurchf': 10000, 'eurnzd': 10000, 'euraud': 10000, 'gbpnzd': 10000,
+                'gbpchf': 10000, 'gbpaud': 10000, 'audnzd': 10000, 'nzdcad': 10000,
+                'audcad': 10000, 'xauusd': 10, 'xagusd': 10, 'btcusd': 1}
+
+    return pip_inst[inst]
+
+
+def f_columnas_datos(param_data):
+    """
+
+    :rtype: object
+    """
+    # convertir columna de 'closetime' y 'opentime' utilizando pd.to_datatime
+    param_data['closetime'] = pd.to_datetime(param_data['closetime'])
+    param_data['opentime'] = pd.to_datetime(param_data['opentime'])
+
+    # tiempo transcurrido de una operación
+    param_data['tiempo'] = [(param_data.loc[i, 'closetime'] -
+                             param_data.loc[i, 'opentime']).delta/1e9
+                            for i in range(0, len(param_data['closetime']))]
+
+    return param_data['tiempo']
