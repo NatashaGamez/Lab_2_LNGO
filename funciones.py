@@ -22,10 +22,14 @@ def f_leer_archivo(param_archivo):
     df_data : pd.DataFrame : con informacion contenida en archivo leido
     Debugging
     ---------
-    param_archivo = 'archivo_tradeview_1.xlsx'
+    param_archivo = 'archivo_1_LNGO.xlsx'
     """
 
     df_data = pd.read_excel('archivos/' + param_archivo, sheet_name='Hoja1')
+
+    #elegir solo reglones donde "type" == buy | sell
+    df_data.rows = [ df_data.rows.loc[i] for i in range(0, len(df_data.rows))
+    if df_data['type'].loc[i] == 'buy' | df_data['type'].loc[i] == 'sell' ]
 
     # convertir nombre de columnas en minusculas
     df_data.columns = [list(df_data.columns)[i].lower()
