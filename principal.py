@@ -6,7 +6,11 @@
 # -- ------------------------------------------------------------------------------------ -- #
 
 import funciones as fn
-
+#Datos
 datos = fn.f_leer_archivo(param_archivo='archivo_tradeview_1.xlsx')
+#Pip size
 pip_size = fn.f_pip_size(param_ins='eurusd')
-datos = fn.f_columnas_datos(param_data=datos)
+#Tranformaciones de tiempo
+datos = fn.f_columnas_tiempos(param_data=datos)
+#Transformaciones Pips
+datos = fn.f_columnas_pips(param_data=datos)

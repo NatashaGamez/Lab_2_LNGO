@@ -27,9 +27,9 @@ def f_leer_archivo(param_archivo):
 
     df_data = pd.read_excel('archivos/' + param_archivo, sheet_name='Hoja1')
 
-    #elegir solo reglones donde "type" == buy | sell
-    df_data.rows = [ df_data.rows.loc[i] for i in range(0, len(df_data.rows))
-    if df_data['type'].loc[i] == 'buy' | df_data['type'].loc[i] == 'sell' ]
+    # elegir solo reglones donde "type" == buy | sell
+    # df_data.drop(df_data.iloc[i] for i in range(0, df_data.shape[0]) \
+    #            if df_data['type'] != 'buy' | df_data['type'] != 'sell')
 
     # convertir nombre de columnas en minusculas
     df_data.columns = [list(df_data.columns)[i].lower()
@@ -71,10 +71,16 @@ def f_pip_size(param_ins):
     return pip_inst[inst]
 
 
-def f_columnas_datos(param_data):
+def f_columnas_tiempos(param_data):
     """
-
-    :rtype: object
+    Parameters
+    ----------
+    param_data : DataFrame base
+    Returns
+    -------
+    df_data : pd.DataFrame : con informacion contenida en archivo leido
+    Debugging
+    ---------
     """
     # convertir columna de 'closetime' y 'opentime' utilizando pd.to_datatime
     param_data['closetime'] = pd.to_datetime(param_data['closetime'])
@@ -82,7 +88,27 @@ def f_columnas_datos(param_data):
 
     # tiempo transcurrido de una operación
     param_data['tiempo'] = [(param_data.loc[i, 'closetime'] -
-                             param_data.loc[i, 'opentime']).delta/1e9
+                             param_data.loc[i, 'opentime']).delta / 1e9
                             for i in range(0, len(param_data['closetime']))]
 
     return param_data['tiempo']
+
+
+def f_columnas_pips(param_data):
+    """
+    Parameters
+    ----------
+    param_data : DataFrame base
+    Returns
+    -------
+    df_data : pd.DataFrame : con informacion contenida en archivo leido
+    Debugging
+    ---------
+    """
+    param_data['pips'] = [param_data.loc[i,'closeprice'] *
+                          f_pip_size(param_ins=param_data.loc[i,'symbol']) for i in range\
+                (0,len(param_data.rows))
+                              if param_data['type'] == 'buy' else\
+                              param_data.loc[i,'openprice'] \
+                              * f_pip_size(param_ins=param_data.loc[i,'symbol'])]
+    return param_data['pips']
