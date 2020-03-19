@@ -27,19 +27,19 @@ def f_leer_archivo(param_archivo):
 
     df_data = pd.read_excel('archivos/' + param_archivo, sheet_name='Hoja1')
 
-    # elegir solo reglones donde "type" == buy | sell
-    # df_data.drop(df_data.iloc[i] for i in range(0, df_data.shape[0]) \
-    #            if df_data['type'] != 'buy' | df_data['type'] != 'sell')
-
     # convertir nombre de columnas en minusculas
     df_data.columns = [list(df_data.columns)[i].lower()
                        for i in range(0, len(df_data.columns))]
+    # elegir solo reglones donde "type" == buy | sell
+    df_data = df_data.drop(df_data[df_data['type'] == 'balance'].index)
+    df_data = df_data.drop(df_data[df_data['type'] == 'buy limit'].index)
+    df_data = df_data.drop(df_data[df_data['type'] == 'sell limit'].index)
 
     # asegurar que ciertas columnas son tipo numerico
     numcols = ['s/l', 't/p', 'commission', 'openprice', 'closeprice', 'profit', 'size', 'swap',
-               'taxes', 'order']
-
+              'taxes', 'order']
     df_data[numcols] = df_data[numcols].apply(pd.to_numeric)
+
     return df_data
 
 
@@ -105,10 +105,20 @@ def f_columnas_pips(param_data):
     Debugging
     ---------
     """
-    param_data['pips'] = [param_data.loc[i,'closeprice'] *
-                          f_pip_size(param_ins=param_data.loc[i,'symbol']) for i in range\
-                (0,len(param_data.rows))
-                              if param_data['type'] == 'buy' else\
-                              param_data.loc[i,'openprice'] \
-                              * f_pip_size(param_ins=param_data.loc[i,'symbol'])]
-    return param_data['pips']
+    #param_data['pips'] = [param_data.loc[i,'closeprice'] *
+     #                     f_pip_size(param_ins=param_data.loc[i,'symbol'])\
+      #                        if param_data['type'] == 'buy' else\
+       #                       param_data.loc[i,'openprice']  * \
+        #                      f_pip_size(param_ins=param_data.loc[i,'symbol']) \
+         #                 for i in range (0,len(param_data['openprice']))]
+    return #param_data['pips']
+def f_estadisticas_ba(param_data):
+    """
+    Parameters
+    ----------
+    :param param_data:
+    Returns
+    -------
+    :return: df_1_tabla y df_2_ranking
+    """
+    return
