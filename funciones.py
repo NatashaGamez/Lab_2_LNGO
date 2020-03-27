@@ -37,8 +37,11 @@ def f_leer_archivo(param_archivo):
 
     # asegurar que ciertas columnas son tipo numerico
     numcols = ['s/l', 't/p', 'commission', 'openprice', 'closeprice', 'profit', 'size', 'swap',
-              'taxes', 'order']
+               'taxes', 'order']
     df_data[numcols] = df_data[numcols].apply(pd.to_numeric)
+
+    # asegurar que ticekr no tenga -2
+    df_data['symbol'] = [df_data.iloc[i, 4].replace("-2", "") for i in range(df_data.shape[0])]
 
     return df_data
 
@@ -66,7 +69,7 @@ def f_pip_size(param_ins):
                 'audusd': 10000, 'nzdusd': 10000, 'usdchf': 10000, 'eurgbp': 10000,
                 'eurchf': 10000, 'eurnzd': 10000, 'euraud': 10000, 'gbpnzd': 10000,
                 'gbpchf': 10000, 'gbpaud': 10000, 'audnzd': 10000, 'nzdcad': 10000,
-                'audcad': 10000, 'xauusd': 10, 'xagusd': 10, 'btcusd': 1}
+                'audcad': 10000, 'gbpcad': 10000, 'xauusd': 10, 'xagusd': 10, 'btcusd': 1}
 
     return pip_inst[inst]
 
@@ -105,13 +108,31 @@ def f_columnas_pips(param_data):
     Debugging
     ---------
     """
-    #param_data['pips'] = [param_data.loc[i,'closeprice'] *
-     #                     f_pip_size(param_ins=param_data.loc[i,'symbol'])\
-      #                        if param_data['type'] == 'buy' else\
-       #                       param_data.loc[i,'openprice']  * \
-        #                      f_pip_size(param_ins=param_data.loc[i,'symbol']) \
-         #                 for i in range (0,len(param_data['openprice']))]
-    return #param_data['pips']
+    param_data['pips'] = param_data.iloc[:, 0]
+    param_data['pips_acm'] = param_data.iloc[:, 14]
+    param_data['profit_acm'] = param_data.iloc[:, 13]
+    for i in range(param_data.shape[0]):
+        # Pips por operacion
+        if param_data.iloc[i, 2] == 'buy':
+            param_data['pips'][i] = (param_data.iloc[i, 9] - param_data.iloc[i, 5]) \
+                                    * f_pip_size(param_ins=param_data.iloc[i, 4])
+        else:
+            param_data['pips'][i] = (param_data.iloc[i, 5] - param_data.iloc[i, 9]) \
+                                    * f_pip_size(param_ins=param_data.iloc[i, 4])
+
+        # Pips acumulados
+        param_data['pips_acm'][i] = param_data.iloc[i, 14]
+        if i > 0:
+            param_data['pips_acm'][i] = param_data.iloc[i - 1, 15] + param_data.iloc[i, 14]
+
+        # Profit acumulado
+        param_data['profit_acm'][i] = param_data.iloc[i, 13]
+        if i > 0:
+            param_data['profit_acm'][i] = param_data.iloc[i - 1, 16] + param_data.iloc[i, 13]
+
+    return param_data
+
+
 def f_estadisticas_ba(param_data):
     """
     Parameters
