@@ -142,4 +142,44 @@ def f_estadisticas_ba(param_data):
     -------
     :return: df_1_tabla y df_2_ranking
     """
-    return
+    # Construccion de df_1_tabla
+    rows = {'Name':['Ops totales', 'Ganadoras', 'Ganadoras_c', 'Ganadoras_v',
+                      'Perdedoras', 'Perdedoras_c', 'Perdedoras_v', 'Media(Profit)',
+                      'Media(Pips)', 'r_efectividad', 'r_proporcion', 'r_efectividad_v',
+                      'r_efectividad_c']}
+    df_1_tabla = pd.DataFrame(rows)
+    df_1_tabla['Valor'] = df_1_tabla.iloc[:, 0]
+    df_1_tabla.iloc[0, 1] = param_data.shape[0]
+    win = 0
+    lose = 0
+    buy = 0
+    sell = 0
+    buy_l = 0
+    sell_l = 0
+    for i in range(param_data.shape[0]):
+        if param_data.iloc[i, 13] >= 0:
+            win = win + 1
+            if param_data.iloc[i, 2] == 'buy':
+                buy = buy + 1
+            else:
+                sell = sell + 1
+        else:
+            lose = lose + 1
+            if param_data.iloc[i, 2] == 'buy':
+                buy_l = buy_l + 1
+            else:
+                sell_l = sell_l + 1
+    df_1_tabla.iloc[1, 1] = win
+    df_1_tabla.iloc[2, 1] = buy
+    df_1_tabla.iloc[3, 1] = sell
+    df_1_tabla.iloc[4, 1] = lose
+    df_1_tabla.iloc[5, 1] = buy_l
+    df_1_tabla.iloc[6, 1] = sell_l
+    df_1_tabla.iloc[7, 1] = param_data.iloc[:, 13].median()
+    df_1_tabla.iloc[8, 1] = param_data.iloc[:, 14].median()
+    df_1_tabla.iloc[9, 1] = df_1_tabla.iloc[1, 1] / df_1_tabla.iloc[0, 1]
+    df_1_tabla.iloc[10, 1] = df_1_tabla.iloc[1, 1] / df_1_tabla.iloc[4, 1]
+    df_1_tabla.iloc[11, 1] = df_1_tabla.iloc[2, 1] / df_1_tabla.iloc[0, 1]
+    df_1_tabla.iloc[12, 1] = df_1_tabla.iloc[3, 1] / df_1_tabla.iloc[0, 1]
+    
+    return df_1_tabla
