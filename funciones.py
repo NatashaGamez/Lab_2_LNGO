@@ -181,5 +181,41 @@ def f_estadisticas_ba(param_data):
     df_1_tabla.iloc[10, 1] = df_1_tabla.iloc[1, 1] / df_1_tabla.iloc[4, 1]
     df_1_tabla.iloc[11, 1] = df_1_tabla.iloc[2, 1] / df_1_tabla.iloc[0, 1]
     df_1_tabla.iloc[12, 1] = df_1_tabla.iloc[3, 1] / df_1_tabla.iloc[0, 1]
-    
-    return df_1_tabla
+
+# -- ------------------------------------------------------------------------------------ -- #
+    # df_1_ranking
+    # lista instrumento
+    inst = ['usdjpy', 'gbpjpy', 'eurjpy', 'cadjpy', 'chfjpy', 'eurusd', 'gbpusd',
+            'usdcad', 'usdmxn', 'audusd', 'nzdusd', 'usdchf', 'eurgbp', 'eurchf',
+            'eurnzd', 'euraud', 'gbpnzd', 'gbpchf', 'gbpaud', 'audnzd', 'nzdcad',
+            'audcad', 'gbpcad', 'xauusd', 'xagusd', 'btcusd']
+
+    # contar repeticiones de symbolo y numero de movimientos ganadores
+    rep = []
+    rank = []
+    for i in inst:
+        count = 0
+        win = 0
+        for k in range(param_data.shape[0]):
+            if i in param_data.iloc[k, 4]:
+                count = count + 1
+                if param_data.iloc[k, 13] > 0:
+                    win = win + 1
+
+        rep.append(count)
+        rank.append(win)
+
+    # Formar tabla
+    df_1_ranking = pd.DataFrame(list(zip(inst, rep, rank)))
+    df_1_ranking.columns = ['Symbol', 'Rep', '#ganadora']
+    df_1_ranking = df_1_ranking.drop(df_1_ranking[df_1_ranking.iloc[:, 2] == 0].index)
+    df_1_ranking = df_1_ranking.reset_index(drop=True)
+    df_1_ranking['Rank %'] = 0
+    for i in range(df_1_ranking.shape[0]):
+        df_1_ranking['Rank %'][i] = df_1_ranking.iloc[i, 2] / df_1_ranking.iloc[i, 1] * 100
+    df_1_ranking = df_1_ranking.drop(['Rep'], axis=1)
+    df_1_ranking = df_1_ranking.drop(['#ganadora'], axis=1)
+    df_1_ranking = df_1_ranking.sort_values('Rank %', ascending=False)
+    df_1_ranking = df_1_ranking.reset_index(drop=True)
+
+    return df_1_tabla, df_1_ranking
