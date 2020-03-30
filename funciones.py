@@ -86,15 +86,15 @@ def f_columnas_tiempos(param_data):
     ---------
     """
     # convertir columna de 'closetime' y 'opentime' utilizando pd.to_datatime
-    param_data['closetime'] = pd.to_datetime(param_data['closetime'])
-    param_data['opentime'] = pd.to_datetime(param_data['opentime'])
+    param_data.iloc[:, 8] = pd.to_datetime(param_data['closetime'])
+    param_data.iloc[:, 1] = pd.to_datetime(param_data['opentime'])
 
     # tiempo transcurrido de una operación
     param_data['tiempo'] = [(param_data.loc[i, 'closetime'] -
                              param_data.loc[i, 'opentime']).delta / 1e9
                             for i in range(0, len(param_data['closetime']))]
 
-    return param_data['tiempo']
+    return param_data
 
 
 def f_columnas_pips(param_data):
@@ -109,8 +109,8 @@ def f_columnas_pips(param_data):
     ---------
     """
     param_data['pips'] = param_data.iloc[:, 0]
-    param_data['pips_acm'] = param_data.iloc[:, 14]
-    param_data['profit_acm'] = param_data.iloc[:, 13]
+    param_data['pips_acm'] = param_data.iloc[:, 15]
+    param_data['profit_acm'] = param_data.iloc[:, 14]
     for i in range(param_data.shape[0]):
         # Pips por operacion
         if param_data.iloc[i, 2] == 'buy':
@@ -121,14 +121,14 @@ def f_columnas_pips(param_data):
                                     * f_pip_size(param_ins=param_data.iloc[i, 4])
 
         # Pips acumulados
-        param_data['pips_acm'][i] = param_data.iloc[i, 14]
+        param_data['pips_acm'][i] = param_data.iloc[i, 15]
         if i > 0:
-            param_data['pips_acm'][i] = param_data.iloc[i - 1, 15] + param_data.iloc[i, 14]
+            param_data['pips_acm'][i] = param_data.iloc[i - 1, 16] + param_data.iloc[i, 15]
 
         # Profit acumulado
         param_data['profit_acm'][i] = param_data.iloc[i, 13]
         if i > 0:
-            param_data['profit_acm'][i] = param_data.iloc[i - 1, 16] + param_data.iloc[i, 13]
+            param_data['profit_acm'][i] = param_data.iloc[i - 1, 17] + param_data.iloc[i, 13]
 
     return param_data
 
@@ -137,16 +137,16 @@ def f_estadisticas_ba(param_data):
     """
     Parameters
     ----------
-    :param param_data:
+    :param param_data: DataFrame base
     Returns
     -------
     :return: df_1_tabla y df_2_ranking
     """
     # Construccion de df_1_tabla
-    rows = {'Name':['Ops totales', 'Ganadoras', 'Ganadoras_c', 'Ganadoras_v',
-                      'Perdedoras', 'Perdedoras_c', 'Perdedoras_v', 'Media(Profit)',
-                      'Media(Pips)', 'r_efectividad', 'r_proporcion', 'r_efectividad_v',
-                      'r_efectividad_c']}
+    rows = {'Name': ['Ops totales', 'Ganadoras', 'Ganadoras_c', 'Ganadoras_v',
+                     'Perdedoras', 'Perdedoras_c', 'Perdedoras_v', 'Media(Profit)',
+                     'Media(Pips)', 'r_efectividad', 'r_proporcion', 'r_efectividad_v',
+                     'r_efectividad_c']}
     df_1_tabla = pd.DataFrame(rows)
     df_1_tabla['Valor'] = df_1_tabla.iloc[:, 0]
     df_1_tabla.iloc[0, 1] = param_data.shape[0]
@@ -182,7 +182,7 @@ def f_estadisticas_ba(param_data):
     df_1_tabla.iloc[11, 1] = df_1_tabla.iloc[2, 1] / df_1_tabla.iloc[0, 1]
     df_1_tabla.iloc[12, 1] = df_1_tabla.iloc[3, 1] / df_1_tabla.iloc[0, 1]
 
-# -- ------------------------------------------------------------------------------------ -- #
+    # -- -------------------------------------------------------------------------------- -- #
     # df_1_ranking
     # lista instrumento
     inst = ['usdjpy', 'gbpjpy', 'eurjpy', 'cadjpy', 'chfjpy', 'eurusd', 'gbpusd',
@@ -219,3 +219,72 @@ def f_estadisticas_ba(param_data):
     df_1_ranking = df_1_ranking.reset_index(drop=True)
 
     return df_1_tabla, df_1_ranking
+
+
+def capital_acm(param_data):
+    """
+    Parameters
+    ----------
+    :param param_data: DataFrame base
+    Returns
+    -------
+    :return: param_data
+    """
+    param_data['capital_acm'] = param_data.iloc[:, 17] + 5000
+
+    return param_data
+
+
+def f_profit_diario(param_data):
+    """
+    Parameters
+    ----------
+    :param param_data: DataFrame base
+    Returns
+    -------
+    :return: df_profit
+    """
+    # Extraer datos necesarios y acomodarlos
+    Profit = param_data.iloc[:, [1, 13, 13]]
+    Profit.columns = ['Timestamp', 'Profit_d', 'Profit_acm_d']
+    Profit['Timestamp'] = [param_data.iloc[i, 1].date() for i in range(param_data.shape[0])]
+    Profit = Profit.sort_values('Timestamp', ascending=True)
+    Profit = Profit.reset_index(drop=True)
+    # número de movimiento final en día
+    valor_fin = []
+    for i in range(Profit.shape[0]):
+        if i < 83:
+            if Profit['Timestamp'][i] != Profit['Timestamp'][i + 1]:
+                valor_fin.append(i)
+        if i == 83:
+            valor_fin.append(i)
+    # sacar fechas de días de movimientos y número de moviemientos en ese día
+    dias = []
+    mov = [valor_fin[0] + 1]
+    for k in range(len(valor_fin)):
+        dias.append(Profit['Timestamp'][valor_fin[k]])
+        if k > 0:
+            r = valor_fin[k] - valor_fin[k - 1]
+            mov.append(r)
+    # profit por dia
+    profit = []
+    suma = 0
+    for e in range(len(valor_fin)):
+        if e == 0:
+            j = Profit.iloc[e:valor_fin[e] + 1, 1]
+            suma = j.sum(axis=0)
+        else:
+            j = Profit.iloc[valor_fin[e - 1] + 1:valor_fin[e] + 1, 1]
+            suma = j.sum(axis=0)
+        profit.append(suma)
+    # juntar en tabla
+    df_profit = pd.DataFrame(list(zip(dias, mov, profit)))
+    df_profit.columns = ['Timestamp', 'mov por día', 'Profit_d']
+    # profit diario acumulado
+    df_profit['Profit_acm_d'] = df_profit.iloc[:, 2]
+    for a in range(df_profit.shape[0]):
+        df_profit['Profit_acm_d'][a] = df_profit['Profit_acm_d'][a]
+        if a > 0:
+            df_profit['Profit_acm_d'][a] = df_profit['Profit_acm_d'][a - 1] \
+                                           + df_profit['Profit_acm_d'][a]
+    return df_profit
