@@ -281,10 +281,10 @@ def f_profit_diario(param_data):
     df_profit = pd.DataFrame(list(zip(dias, mov, profit)))
     df_profit.columns = ['Timestamp', 'mov por día', 'Profit_d']
     # profit diario acumulado
-    df_profit['Profit_acm_d'] = df_profit.iloc[:, 2]
+    df_profit['Profit_acm_d'] = df_profit.iloc[:, 2]+5000
     for a in range(df_profit.shape[0]):
         df_profit['Profit_acm_d'][a] = df_profit['Profit_acm_d'][a]
         if a > 0:
             df_profit['Profit_acm_d'][a] = df_profit['Profit_acm_d'][a - 1] \
-                                           + df_profit['Profit_acm_d'][a]
+                                           + df_profit['Profit_acm_d'][a]-5000
     return df_profit
