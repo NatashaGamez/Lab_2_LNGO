@@ -6,7 +6,7 @@
 # -- ------------------------------------------------------------------------------------ -- #
 
 import pandas as pd
-
+import numpy as np
 
 # -- --------------------------------------------------- FUNCION: Leer archivo de entrada -- #
 # -- ------------------------------------------------------------------------------------ -- #
@@ -288,3 +288,42 @@ def f_profit_diario(param_data):
             df_profit['Profit_acm_d'][a] = df_profit['Profit_acm_d'][a - 1] \
                                            + df_profit['Profit_acm_d'][a]-5000
     return df_profit
+def f_estadisticas_mad(param_data):
+    """
+    Parameters
+    ----------
+    :param param_data: DataFrame base
+    Returns
+    -------
+    :return: df_mad
+
+    """
+    pr = param_data['Profit_acm_d']
+    rp = np.diff(np.log(pr))
+    # Sharpe Ratio
+    rf = 0.08
+    std_sharpe= np.std(rp)
+    sharpe = np.mean(rp - rf) / std_sharpe
+
+    # Sortino Ratio (Posiciones Compra)
+    a = []
+    mar = 0.3 / 252
+    for i in range(len(rp)):
+        if rp[i] < 0:
+            a.append(i)
+    std_sortinoc = np.std(np.delete(rp, a))
+    sortino_c = np.mean(rp - mar) / std_sortinoc
+
+    # Sortino Ratio (Posiciones Venta)
+    g = []
+    for i in range(len(rp)):
+        if rp[i] > 0:
+            g.append(i)
+    std_sortinov = np.std(np.delete(rp, g))
+    sortino_v = np.mean(rp - mar) / std_sortinov
+
+    # Tabla
+    df_mad = {'Metrica': ['Sharpe','Sortino_C','Sortino_V'],
+    'Valor': [sharpe,sortino_c,sortino_v]}
+    df_mad = pd.DataFrame(df_mad)
+    return df_mad
