@@ -7,6 +7,7 @@
 
 import pandas as pd
 import numpy as np
+import datetime
 
 # -- --------------------------------------------------- FUNCION: Leer archivo de entrada -- #
 # -- ------------------------------------------------------------------------------------ -- #
@@ -250,7 +251,17 @@ def f_profit_diario(param_data):
     Profit['Timestamp'] = [param_data.iloc[i, 1].date() for i in range(param_data.shape[0])]
     Profit = Profit.sort_values('Timestamp', ascending=True)
     Profit = Profit.reset_index(drop=True)
+
     # número de movimiento final en día
+    day = Profit.iloc[0, 0]
+    day_fin = Profit.iloc[-1, 0]
+    one_day = datetime.timedelta(days=1)
+    days = []
+    for i in range((day_fin - day).days):
+        day_new = day + one_day * i
+        days.append(day_new)
+    days.append(day_fin)
+
     valor_fin = []
     for i in range(Profit.shape[0]):
         if i < 83:
@@ -266,6 +277,12 @@ def f_profit_diario(param_data):
         if k > 0:
             r = valor_fin[k] - valor_fin[k - 1]
             mov.append(r)
+    #dias en string
+    for i in range(len(days)):
+        days[i] = days[i].strftime("%Y/%m/%d")
+    for k in range(len(dias)):
+        dias[k] = dias[k].strftime("%Y/%m/%d")
+
     # profit por dia
     profit = []
     suma = 0
@@ -277,9 +294,25 @@ def f_profit_diario(param_data):
             j = Profit.iloc[valor_fin[e - 1] + 1:valor_fin[e] + 1, 1]
             suma = j.sum(axis=0)
         profit.append(suma)
+    # obtener fechas sin movimiento
+    a = []
+    for ñ in dias:
+        for m in range(len(days)):
+            if ñ in days[m]:
+                a.append(m)
+    g = []
+    for i in range(a[-1]):
+        if i not in a:
+            g.append(i)
+    for s in range(len(g)):
+        dias.append(days[g[s]])
+        profit.append(0)
+        
     # juntar en tabla
     df_profit = pd.DataFrame(list(zip(dias, mov, profit)))
     df_profit.columns = ['Timestamp', 'mov por día', 'Profit_d']
+    df_profit = df_profit.sort_values('Timestamp', ascending=True)
+    df_profit = df_profit.reset_index(drop=True)
     # profit diario acumulado
     df_profit['Profit_acm_d'] = df_profit.iloc[:, 2]+5000
     for a in range(df_profit.shape[0]):
