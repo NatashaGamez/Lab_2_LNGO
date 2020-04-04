@@ -246,22 +246,23 @@ def f_profit_diario(param_data):
     :return: df_profit
     """
     # Extraer datos necesarios y acomodarlos
+    # Extraer datos necesarios y acomodarlos
     Profit = param_data.iloc[:, [1, 13, 13]]
     Profit.columns = ['Timestamp', 'Profit_d', 'Profit_acm_d']
     Profit['Timestamp'] = [param_data.iloc[i, 1].date() for i in range(param_data.shape[0])]
     Profit = Profit.sort_values('Timestamp', ascending=True)
     Profit = Profit.reset_index(drop=True)
 
-    # número de movimiento final en día
+    # Sacar todas las fechas
     day = Profit.iloc[0, 0]
     day_fin = Profit.iloc[-1, 0]
     one_day = datetime.timedelta(days=1)
     days = []
-    for i in range((day_fin - day).days):
-        day_new = day + one_day * i
+    for x in range((day_fin - day).days):
+        day_new = day + one_day * x
         days.append(day_new)
     days.append(day_fin)
-
+    # número de movimiento final en día
     valor_fin = []
     for i in range(Profit.shape[0]):
         if i < 83:
@@ -277,11 +278,6 @@ def f_profit_diario(param_data):
         if k > 0:
             r = valor_fin[k] - valor_fin[k - 1]
             mov.append(r)
-    #dias en string
-    for i in range(len(days)):
-        days[i] = days[i].strftime("%Y/%m/%d")
-    for k in range(len(dias)):
-        dias[k] = dias[k].strftime("%Y/%m/%d")
 
     # profit por dia
     profit = []
@@ -294,7 +290,13 @@ def f_profit_diario(param_data):
             j = Profit.iloc[valor_fin[e - 1] + 1:valor_fin[e] + 1, 1]
             suma = j.sum(axis=0)
         profit.append(suma)
-    # obtener fechas sin movimiento
+    # dias en string
+    for l in range(len(days)):
+        days[l] = days[l].strftime("%Y/%m/%d")
+    for k in range(len(dias)):
+        dias[k] = dias[k].strftime("%Y/%m/%d")
+
+    # Indentificar fechas sin moviemiento y agragarlas con profit 0
     a = []
     for ñ in dias:
         for m in range(len(days)):
@@ -307,20 +309,23 @@ def f_profit_diario(param_data):
     for s in range(len(g)):
         dias.append(days[g[s]])
         profit.append(0)
-        
-    # juntar en tabla
-    df_profit = pd.DataFrame(list(zip(dias, mov, profit)))
-    df_profit.columns = ['Timestamp', 'mov por día', 'Profit_d']
+
+    # Generar tabla
+    df_profit = pd.DataFrame(list(zip(dias, profit)))
+    df_profit.columns = ['Timestamp', 'Profit_d']
     df_profit = df_profit.sort_values('Timestamp', ascending=True)
     df_profit = df_profit.reset_index(drop=True)
     # profit diario acumulado
-    df_profit['Profit_acm_d'] = df_profit.iloc[:, 2]+5000
+    df_profit['Profit_acm_d'] = df_profit.iloc[:, 1] + 5000
     for a in range(df_profit.shape[0]):
         df_profit['Profit_acm_d'][a] = df_profit['Profit_acm_d'][a]
         if a > 0:
             df_profit['Profit_acm_d'][a] = df_profit['Profit_acm_d'][a - 1] \
-                                           + df_profit['Profit_acm_d'][a]-5000
+                                           + df_profit['Profit_acm_d'][a] - 5000
+
     return df_profit
+
+
 def f_estadisticas_mad(param_data):
     """
     Parameters
