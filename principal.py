@@ -14,3 +14,5 @@ pip_size = fn.f_pip_size(param_ins='eurusd')
 datos = fn.f_columnas_tiempos(param_data=datos)
 #Transformaciones Pips
 datos = fn.f_columnas_pips(param_data=datos)
+# Profit diario
+Prfit_d = fn.f_profit_diario(param_data=datos)

@@ -246,22 +246,24 @@ def f_profit_diario(param_data):
     :return: df_profit
     """
     # Extraer datos necesarios y acomodarlos
-    # Extraer datos necesarios y acomodarlos
-    Profit = param_data.iloc[:, [1, 13, 13]]
-    Profit.columns = ['Timestamp', 'Profit_d', 'Profit_acm_d']
-    Profit['Timestamp'] = [param_data.iloc[i, 1].date() for i in range(param_data.shape[0])]
+    Profit = param_data.iloc[:, [2, 8, 13, 13]]
+    Profit.columns = ['Tipo', 'Timestamp', 'Profit_d', 'Profit_acm_d']
+    Profit['Timestamp'] = [Profit['Timestamp'][i].date() for i in range(param_data.shape[0])]
     Profit = Profit.sort_values('Timestamp', ascending=True)
     Profit = Profit.reset_index(drop=True)
 
     # Sacar todas las fechas
-    day = Profit.iloc[0, 0]
-    day_fin = Profit.iloc[-1, 0]
+    day = Profit['Timestamp'][0]
+    day_fin = Profit['Timestamp'][Profit.shape[0]-1]
     one_day = datetime.timedelta(days=1)
     days = []
     for x in range((day_fin - day).days):
         day_new = day + one_day * x
         days.append(day_new)
     days.append(day_fin)
+    # dias en string
+    days = [days[l].strftime("%Y-%m-%d") for l in range(len(days))]
+
     # número de movimiento final en día
     valor_fin = []
     for i in range(Profit.shape[0]):
@@ -278,23 +280,42 @@ def f_profit_diario(param_data):
         if k > 0:
             r = valor_fin[k] - valor_fin[k - 1]
             mov.append(r)
+    dias = [dias[k].strftime("%Y-%m-%d") for k in range(len(dias))]
 
     # profit por dia
     profit = []
     suma = 0
     for e in range(len(valor_fin)):
         if e == 0:
-            j = Profit.iloc[e:valor_fin[e] + 1, 1]
+            j = Profit.iloc[e:valor_fin[e] + 1, 2]
             suma = j.sum(axis=0)
         else:
-            j = Profit.iloc[valor_fin[e - 1] + 1:valor_fin[e] + 1, 1]
+            j = Profit.iloc[valor_fin[e - 1] + 1:valor_fin[e] + 1, 2]
             suma = j.sum(axis=0)
         profit.append(suma)
-    # dias en string
-    for l in range(len(days)):
-        days[l] = days[l].strftime("%Y/%m/%d")
-    for k in range(len(dias)):
-        dias[k] = dias[k].strftime("%Y/%m/%d")
+    # -- -------------------------------------------------------------------------------- -- #
+    # profit operaciones buy por dia
+    profit_c = []
+    for x in range(len(valor_fin)):
+        c = []
+        for z in range(Profit.shape[0]):
+            if x == 0 and Profit['Tipo'][z] == 'buy' and z <= valor_fin[x]:
+                c.append(Profit['Profit_d'][z])
+            if x > 0 and Profit['Tipo'][z] == 'buy' and valor_fin[x - 1] < z <= valor_fin[x]:
+                c.append(Profit['Profit_d'][z])
+            suma_c = np.sum(np.array(c))
+        profit_c.append(suma_c)
+    # profit operaciones sell por dia
+    profit_v = []
+    for x in range(len(valor_fin)):
+        v = []
+        for z in range(Profit.shape[0]):
+            if x == 0 and Profit['Tipo'][z] == 'sell' and z <= valor_fin[x]:
+                v.append(Profit['Profit_d'][z])
+            if x > 0 and Profit['Tipo'][z] == 'sell' and valor_fin[x - 1] < z <= valor_fin[x]:
+                v.append(Profit['Profit_d'][z])
+            suma_v = np.sum(np.array(v))
+        profit_v.append(suma_v)
 
     # Indentificar fechas sin moviemiento y agragarlas con profit 0
     a = []
@@ -309,6 +330,8 @@ def f_profit_diario(param_data):
     for s in range(len(g)):
         dias.append(days[g[s]])
         profit.append(0)
+        profit_c.append(0)
+        profit_v.append(0)
 
     # Generar tabla
     df_profit = pd.DataFrame(list(zip(dias, profit)))
@@ -322,11 +345,33 @@ def f_profit_diario(param_data):
         if a > 0:
             df_profit['Profit_acm_d'][a] = df_profit['Profit_acm_d'][a - 1] \
                                            + df_profit['Profit_acm_d'][a] - 5000
+    # -- -------------------------------------------------------------------------------- -- #
+    df_c = pd.DataFrame(list(zip(dias,profit_c)))
+    df_c.columns = ['Timestamp', 'Profit_d_c']
+    df_c = df_c.sort_values('Timestamp', ascending=True)
+    df_c = df_c.reset_index(drop=True)
+    df_c['Profit_d_acm_c'] = df_c['Profit_d_c']
+    for q in range(len(profit_c)):
+        df_c['Profit_d_acm_c'][q] = df_c['Profit_d_c'][q] + 5000
+        if q > 0:
+            df_c['Profit_d_acm_c'][q] = df_c['Profit_d_c'][q] + df_c['Profit_d_acm_c'][q - 1]
 
-    return df_profit
+    # -- -------------------------------------------------------------------------------- -- #
+
+    df_v = pd.DataFrame(list(zip(dias, profit_v)))
+    df_v.columns = ['Timestamp', 'Profit_d_v']
+    df_v = df_v.sort_values('Timestamp', ascending=True)
+    df_v = df_v.reset_index(drop=True)
+    df_v['Profit_d_acm_v'] = df_v['Profit_d_v']
+    for w in range(len(profit_v)):
+        df_v['Profit_d_acm_v'][w] = df_v['Profit_d_v'][w] + 5000
+        if w > 0:
+            df_v['Profit_d_acm_v'][w] = df_v['Profit_d_v'][w] + df_v['Profit_d_acm_v'][w - 1]
+
+    return df_profit, df_c, df_v
 
 
-def f_estadisticas_mad(param_data):
+def f_estadisticas_mad(param_data,profit_acm_c,profit_acm_v):
     """
     Parameters
     ----------
@@ -336,32 +381,65 @@ def f_estadisticas_mad(param_data):
     :return: df_mad
 
     """
+
+    # Sharpe Ratio
     pr = param_data['Profit_acm_d']
     rp = np.diff(np.log(pr))
-    # Sharpe Ratio
-    rf = 0.08
+    rf = 0.08/252
     std_sharpe= np.std(rp)
-    sharpe = np.mean(rp - rf) / std_sharpe
+    sharpe = round(np.mean(rp - rf) / std_sharpe,5)
 
-    # Sortino Ratio (Posiciones Compra)
-    a = []
     mar = 0.3 / 252
-    for i in range(len(rp)):
-        if rp[i] < 0:
-            a.append(i)
-    std_sortinoc = np.std(np.delete(rp, a))
-    sortino_c = np.mean(rp - mar) / std_sortinoc
+    # Sortino Ratio (Posiciones Compra)
+    pr_c = profit_acm_c['Profit_d_acm_c']
+    rp_c = np.diff(np.log(pr_c))
+    a = []
+    for i in range(len(rp_c)):
+        if rp_c[i] > mar:
+            a.append(rp_c[i])
+    std_sortinoc = np.std(a)
+    sortino_c = round(np.mean(rp_c - mar) / std_sortinoc,4)
 
     # Sortino Ratio (Posiciones Venta)
-    g = []
-    for i in range(len(rp)):
-        if rp[i] > 0:
-            g.append(i)
-    std_sortinov = np.std(np.delete(rp, g))
-    sortino_v = np.mean(rp - mar) / std_sortinov
+    pr_v = profit_acm_v['Profit_d_acm_v']
+    rp_v = np.diff(np.log(pr_v))
+    v = []
+    for x in range(len(rp_v)):
+        if rp_v[x] < mar:
+            v.append(rp_v[x])
+    std_sortinov = np.std(v)
+    sortino_v = round(np.mean(rp_v - mar) / std_sortinov,4)
+
+    #DrawDown
+    elem = []
+    for u in range(param_data.shape[0]):
+        if u > 0:
+            if param_data['Profit_acm_d'][u] < param_data['Profit_acm_d'][u - 1]:
+                elem.append(u)
+    e = [elem[0]]
+    for t in range(len(elem)):
+        if t > 0 and elem[t] - elem[t - 1] < 2:
+            e.append(elem[t])
+    DD = param_data['Profit_acm_d'][e[len(e) - 1]] - param_data['Profit_acm_d'][e[0]]
+    DrawDown = [param_data['Timestamp'][e[0]], param_data['Timestamp'][e[len(e)-1]], round(DD,2)]
+
+    # DrawUP
+    elem_up = []
+    for u in range(param_data.shape[0]):
+        if u > 0:
+            if param_data['Profit_acm_d'][u] > param_data['Profit_acm_d'][u - 1]:
+                elem_up.append(u)
+    up = []
+    for p in range(len(elem_up)):
+        if 0 == p < len(elem_up) and (elem_up[p + 1] - elem_up[p]) < 3:
+            up.append(elem_up[p])
+        if p > 0 and (elem_up[p] - elem_up[p - 1]) < 2 or (elem_up[p] - elem_up[p - 1]) > 3:
+            up.append(elem_up[p])
+    DU = param_data['Profit_acm_d'][up[len(up) - 1]] - param_data['Profit_acm_d'][up[0]]
+    DrawUp = [param_data['Timestamp'][up[0]], param_data['Timestamp'][up[len(up) - 1]], round(DU,2)]
 
     # Tabla
-    df_mad = {'Metrica': ['Sharpe','Sortino_C','Sortino_V'],
-    'Valor': [sharpe,sortino_c,sortino_v]}
+    df_mad = {'Metrica': ['Sharpe','Sortino_C','Sortino_V','DrawDown','DrawUP'],
+    'Valor': [sharpe,sortino_c,sortino_v, DrawDown,DrawUp]}
     df_mad = pd.DataFrame(df_mad)
     return df_mad
