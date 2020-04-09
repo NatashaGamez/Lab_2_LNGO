@@ -8,6 +8,8 @@
 import pandas as pd
 import numpy as np
 import datetime
+import fun_precios_m as fpm
+from datos import OA_Ak
 
 # -- --------------------------------------------------- FUNCION: Leer archivo de entrada -- #
 # -- ------------------------------------------------------------------------------------ -- #
@@ -438,8 +440,68 @@ def f_estadisticas_mad(param_data,profit_acm_c,profit_acm_v):
     DU = param_data['Profit_acm_d'][up[len(up) - 1]] - param_data['Profit_acm_d'][up[0]]
     DrawUp = [param_data['Timestamp'][up[0]], param_data['Timestamp'][up[len(up) - 1]], round(DU,2)]
 
+    # -- --------------------------------------------------------- Descargar precios de OANDA -- #
+    one_day = datetime.timedelta(days=1)
+    # token de OANDA
+    OA_In = "SPX500_USD"  # Instrumento
+    OA_Gn = "D"  # Granularidad de velas
+    fini = pd.to_datetime(param_data['Timestamp'][1]).tz_localize('GMT')  # Fecha inicial
+    ffin = pd.to_datetime(datetime.datetime.strptime(param_data['Timestamp'][param_data.shape[0] - 1],
+                                                     '%Y-%m-%d') + one_day * 3).tz_localize('GMT')  # Fecha final
+
+    # Descargar precios masivos
+    df_pe = fpm.f_precios_masivos(p0_fini=fini, p1_ffin=ffin, p2_gran=OA_Gn,
+                                  p3_inst=OA_In, p4_oatk=OA_Ak, p5_ginc=4900)
+    # Sacar todas las fechas
+    day = param_data['Timestamp'][0]
+    day = datetime.datetime.strptime(day, '%Y-%m-%d')
+    day_fin = param_data['Timestamp'][param_data.shape[0] - 1]
+    day_fin = datetime.datetime.strptime(day_fin, '%Y-%m-%d')
+    days = []
+    for x in range((day_fin - day).days):
+        day_new = day + one_day * x
+        days.append(day_new)
+    days.append(day_fin)
+    days = [days[l].strftime("%Y-%m-%d") for l in range(len(days))]
+
+    dias = df_pe['TimeStamp']
+    dias = [dias[g].strftime("%Y-%m-%d") for g in range(len(dias))]
+
+    # Indentificar fechas sin moviemiento y agragarlas con profit 0
+    a = []
+    for ñ in dias:
+        for m in range(len(days)):
+            if ñ in days[m]:
+                a.append(m)
+    g = []
+    for i in range(a[-1]):
+        if i not in a:
+            g.append(i)
+    close = []
+    for f in range(df_pe.shape[0]):
+        close.append(df_pe['Close'][f])
+    for s in range(len(g)):
+        dias.append(days[g[s]])
+        close.append(0)
+    df = pd.DataFrame(list(zip(dias, close)))
+    df.columns = ['Timestamp', 'Close']
+    df = df.sort_values('Timestamp', ascending=True)
+    df = df.reset_index(drop=True)
+
+    for i in range(len(df['Close'])):
+        if df['Close'][i] == 0:
+            df['Close'][i] = df['Close'][i - 1]
+
+    #Information Ratio
+    r_indice = np.diff(np.log(df['Close']))
+    info_ratio = np.mean(rp - r_indice)/np.std(rp-r_indice)
+
     # Tabla
-    df_mad = {'Metrica': ['Sharpe','Sortino_C','Sortino_V','DrawDown','DrawUP'],
-    'Valor': [sharpe,sortino_c,sortino_v, DrawDown,DrawUp]}
+    df_mad = {'Metrica': ['Sharpe', 'Sortino_C', 'Sortino_V', 'DrawDown', 'DrawUP', 'Information_r'],
+              'Valor': [sharpe, sortino_c, sortino_v, DrawDown, DrawUp, info_ratio],
+              'Descripción': ['Sharpe Rtio','Sortino Ratio para Posiciones de Compra',
+                              'Sortino Ratio para Posiciones de Ventas','DrawDown De Capital',
+                              'DrawUp de Capital', 'Information Ratio']}
     df_mad = pd.DataFrame(df_mad)
+
     return df_mad
