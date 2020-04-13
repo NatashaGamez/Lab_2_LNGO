@@ -1,3 +1,9 @@
+# -- ------------------------------------------------------------------------------------ -- #
+# -- proyecto: Microestructura y Sistemas de Trading - Laboratorio 2 - Behavioral Finance
+# -- archivo: fun_precios_m.py - descargar precios masivos para bechmark
+# -- mantiene: Natasha Gamez
+# -- repositorio: https://github.com/NatashaGamez/Lab_2_LNGO
+# -- ------------------------------------------------------------------------------------ -- #
 
 import pandas as pd                                       # dataframes y utilidades
 from datetime import timedelta                            # diferencia entre datos tipo tiempo
