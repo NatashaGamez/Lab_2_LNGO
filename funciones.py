@@ -518,7 +518,7 @@ def f_estadisticas_mad(param_data, profit_acm_c, profit_acm_v):
     df_mad = {'Metrica': ['Sharpe', 'Sortino_C', 'Sortino_V', 'DrawDown', 'DrawUP',
                           'Information_r'],
               'Valor': [sharpe, sortino_c, sortino_v, DrawDown, DrawUp, info_ratio],
-              'Descripción': ['Sharpe Rtio', 'Sortino Ratio para Posiciones de Compra',
+              'Descripción': ['Sharpe Ratio', 'Sortino Ratio para Posiciones de Compra',
                               'Sortino Ratio para Posiciones de Ventas', 'DrawDown De Capital',
                               'DrawUp de Capital', 'Information Ratio']}
     df_mad = pd.DataFrame(df_mad)
